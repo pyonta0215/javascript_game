@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+    <head>
+        <script>
+            var timerId;
+
+            function timeoutStart() {
+                timerId = setTimeout(whattime, 3000);
+            }
+            function timeoutStop() {
+                clearTimeout(timerId);
+            }
+
+            function intervalStart() {
+                clearInterval(timerId);
+                timerId = setInterval(whattime, 2000);
+            }
+            function intervalStop() {
+                clearInterval(timerId);
+            }
+
+            function whattime() {
+                document.getElementById("info").textContent = new Date();
+            }
+        </script>
+    </head>
+    <body>
+        <button onclick="timeoutStart()">setTimeout</button>
+        <button onclick="timeoutStop()">clearTimeout</button>
+        <button onclick="intervalStart()">setInterval</button>
+        <button onclick="intgervalStop()">clearInterval</button>
+        <p id="info"></p>
+    </body>
+</html>
