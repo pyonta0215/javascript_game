@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            #clock {
+                width: 300px;
+                height: 300px;
+            }
+        </style>
+        <script>
+            var ctx, x = 150, y = 150, isKeyDown, isOpen = true, rotate = 0;
+
+            function gobj(id) {
+                return document.getElementById(id);
+            }
+
+            function init() {
+                var canvas = gobj("canvas");
+                ctx =  canvas.getContext("2d");
+                document.onkeydown = mykeydown;
+                document.onkeyup = keyup;
+                setInterval(tick, 200);
+            }
+
+            function tick() {
+                if (isKeyDown) {
+                    isOpen = !isOpen;
+                }
+                paint();
+            }
+
+            function mykeydown(e) {
+                switch (e.keyCode) {
+                    case 37:
+                        rotate = Math.PI;
+                        break;
+                    case 38:
+                        rotate = -Math.PI / 2;
+                        break;
+                    case 39:
+                        rotate = 0;
+                        break;
+                    case 40:
+                        rotate = +Math.PI / 2;
+                        break;
+                }
+                isKeyDown = true;
+            }
+
+            function keyup(e) {
+                isKeyDown = false;
+            }
+
+            function paint() {
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 300, 300);
+                ctx.fillStyle = "yellow";
+                ctx.beginPath();
+                ctx.save();
+                ctx.translate(x, y);
+                ctx.rotate(rotate);
+                ctx.moveTo(0, 0);
+                if (isOpen) {
+                    ctx.arc(0, 0, 30, -Math.PI / 4, Math.PI / 4, true);
+                } else {
+                    ctx.arc(0, 0, 30, 0, Math.PI * 2, true);
+                }
+                ctx.restore();
+                ctx.fill();
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <canvas width="300" height="300" id="canvas"></canvas>
+    </body>
+</html>

@@ -1,0 +1,28 @@
+<!doctype html>
+<html>
+    <head>
+        <script>
+            var ctx;
+            function gobj(id) {
+                return document.getElementById(id);
+            }
+
+            function init() {
+                var canvas = gobj("canvas");
+                ctx = canvas.getContext("2d");
+
+                var neko = gobj("neko");
+                var photo = gobj("photo");
+                ctx.drawImage(neko, 10, 10);
+                ctx.drawImage(neko, 10, 100, 50, 50);
+                ctx.drawImage(photo, 260, 480, 200, 150, 150, 10, 200, 150);
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <canvas id="canvas" width="600" height="400">
+            <img id="photo" src="neko.gif" style="display:none" />
+            <img id="neko" src="neko.gif" style="display:none" />
+        </canvas>
+    </body>
+</html>
