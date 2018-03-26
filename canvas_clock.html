@@ -1,0 +1,43 @@
+<!doctype html>
+<html>
+    <head>
+        <style>
+            #clock {
+                width: 300px;
+                height: 300px;
+            }
+        </style>
+        <script>
+            var ctx;
+            function gobj(id) {
+                return document.getElementById(id);
+            }
+
+            function init() {
+                ctx = gobj("clock").getContext('2d');
+                paint();
+            }
+
+            function paint() {
+                ctx.clearRect(0, 0, 300, 300);
+
+                ctx.save();
+                ctx.translate(150, 150);
+                ctx.strokeStyle = "black";
+                var pitch = Math.PI * 2 / 60;
+                for (var i = 0; i < 60; i++) {
+                    ctx.beginPath();
+                    ctx.lineWidth = (i % 5) == 0 ? 3: 1;
+                    ctx.moveTo(0, -120);
+                    ctx.lineTo(0, -140);
+                    ctx.stroke();
+                    ctx.rotate(pitch);
+                }
+                ctx.restore();
+            }
+        </script>
+    </head>
+    <body onload="init()">
+        <canvas width="300" height="300" id="clock"></canvas>
+    </body>
+</html>
