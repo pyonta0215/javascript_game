@@ -1,7 +1,7 @@
 "use strict";
 
-var ctx, player, enemys = [], gravity, canvas, scroll, walls = [],
-    score = 0, stage = 1, clock = 0, mainT = NaN;
+var ctx, canvas, scroll, clock = 0, mainT = NaN;
+var player, enemys = [], gravity, walls = [], score = 0, stage = 1;
 
 var keyState = new Array(244);
 
@@ -17,7 +17,7 @@ function Scroll(x, x_end) {
 
 function Canvas(w, h) {
     this.width = w;
-    this.height = h;
+    this.height = h;            
 }
 
 function Charactor(x, y) {
@@ -33,19 +33,39 @@ function Charactor(x, y) {
     this.color = "deepskyblue"
     this.directionX = "";
     this.directionY = "";
+    this.preDirectionX = "";
+    this.preDirectionY = "";
+    this.preOnGround = false;
 
     this.preMove = function () {
+        this.preOnGround = this.onGround;
         this.preMoveX();
         this.preMoveY();
+        this.onGround = false;
     }
 
-    this.preMoveX = function () {
-        this.vx += this.speed;
+    this.ajustMovePoint = function (_w) {
+        if (this.isWallCollisionX(_w)) {
+            this.ajustX(_w);
+        }
+        if (this.isWallCollisionY(_w)) {
+            this.ajustY(_w);
+        }
+        
+        if (this.isWallCollisionVX(_w)) {
+            this.ajustX(_w);
+        }
+        if (this.isWallCollisionVY(_w)) {
+            this.ajustY(_w);
+        }
     }
 
-    this.preMoveY = function () {
-        this.jumpspeed -= gravity.g;
-        this.vy -= this.jumpspeed;
+    this.ajustX = function (_w) {
+        this.changeX(_w);
+    }
+
+    this.ajustY = function (_w) {
+        this.changeY(_w);
     }
 
     this.move = function () {
@@ -58,6 +78,15 @@ function Charactor(x, y) {
         this.getDirectionY();
     }
 
+    this.preMoveX = function () {
+        this.vx += this.speed;
+    }
+
+    this.preMoveY = function () {
+        this.jumpspeed -= gravity.g;
+        this.vy -= this.jumpspeed;
+    }
+
     this.getDirectionX = function() {
         if (this.x > this.vx) {
             this.directionX = "←";
@@ -68,6 +97,8 @@ function Charactor(x, y) {
         else {
             this.directionX = " ";
         }
+
+        this.preDirectionX = this.directionX;
     }
 
     this.getDirectionY = function() {
@@ -80,56 +111,54 @@ function Charactor(x, y) {
         else {
             this.directionY = " ";
         }
+
+        this.preDirectionY = this.directionY;
     }
 
     this.isCollision = function(_w) {
-
-        if (this.isTouchingVX(_w) && this.isTouchingVY(_w)) {
-            return true;
-        }
-        return false;
+        return (this.isTouchingX(_w) && this.isTouchingY(_w));
     }
 
     this.isTouchingVX = function(_w) {
-        if (this.vx < _w.x + _w.width && this.vx + this.width > _w.x) {
-            return true;
-        }
-        return false;
-    }
-
-    this.isTouchingVY = function(_w) {
-        if (this.vy < _w.y + _w.height && this.vy + this.height > _w.y) {
-            return true;
-        }
-        return false;       
+        return (this.vx < _w.x + _w.width && this.vx + this.width > _w.x);
     }
 
     this.isTouchingX = function(_w) {
-        if (this.x < _w.x + _w.width && this.x + this.width > _w.x) {
-            return true;
-        }
-        return false;
+        return (this.x < _w.x + _w.width && this.x + this.width > _w.x);
+    }
+
+    this.isTouchingMoveRight = function(_w) {
+        return (this.x + this.width <= _w.x && _w.x < this.vx + this.width);
+    }
+
+    this.isTouchingMoveLeft = function(_w) {
+        return (_w.x + _w.width <= this.x && this.vx < _w.x + _w.width);
+    }
+
+    this.isTouchingVY = function(_w) {
+        return (this.vy < _w.y + _w.height && this.vy + this.height > _w.y);      
     }
 
     this.isTouchingY = function(_w) {
-        if (this.y < _w.y + _w.height && this.y + this.height > _w.y) {
-            return true;
-        }
-        return false;       
+        return (this.y < _w.y + _w.height && this.y + this.height > _w.y);
+    }
+
+    this.isTouchingMoveUp = function(_w) {
+        return (_w.y + _w.height <= this.y && this.vy < _w.y + _w.height);
+    }
+
+    this.isTouchingMoveDown = function(_w) {
+        return (this.y + this.height <= _w.y && _w.y < this.vy + this.height); 
     }
 
     this.isWallCollisionX = function(_w) {
 
         if (this.isTouchingY(_w)) {
             if (this.directionX == "→") {
-                if (this.x + this.width <= _w.x && _w.x < this.vx + this.width ) {
-                    return true;
-                } 
+                return this.isTouchingMoveRight(_w);
             }
             if (this.directionX == "←") {
-                if (_w.x + _w.width <= this.x && this.vx < _w.x + _w.width) {
-                    return true;
-                }
+                return this.isTouchingMoveLeft(_w);
             }
         }
         return false;
@@ -139,14 +168,36 @@ function Charactor(x, y) {
 
         if (this.isTouchingX(_w)) {
             if (this.directionY == "↑") {
-                if (_w.y + _w.height <= this.y && this.vy < _w.y + _w.height) {
-                    return true;
-                } 
+                return this.isTouchingMoveUp(_w);
             }
             if (this.directionY == "↓") {
-                if (this.y + this.height <= _w.y && _w.y < this.vy + this.height) {
-                    return true;
-                } 
+                return this.isTouchingMoveDown(_w);
+            }
+        }
+        return false;
+    }
+
+    this.isWallCollisionVX = function(_w) {
+
+        if (this.isTouchingVY(_w)) {
+            if (this.directionX == "→") {
+                return this.isTouchingMoveRight(_w);
+            }
+            if (this.directionX == "←") {
+                return this.isTouchingMoveLeft(_w);
+            }
+        }
+        return false;
+    }
+
+    this.isWallCollisionVY = function(_w) {
+
+        if (this.isTouchingVX(_w)) {
+            if (this.directionY == "↑") {
+                return this.isTouchingMoveUp(_w);
+            }
+            if (this.directionY == "↓") {
+                return this.isTouchingMoveDown(_w);
             }
         }
         return false;
@@ -156,10 +207,12 @@ function Charactor(x, y) {
         if (this.directionX == "→") {
             this.vx = _w.x - this.width;
             this.speed = _w.bound;
+            this.directionX = " ";
         }
         else if (this.directionX == "←") {
             this.vx = _w.x + _w.width;
             this.speed = _w.bound;
+            this.directionX = " ";
         }
     }
 
@@ -169,10 +222,12 @@ function Charactor(x, y) {
             this.jumpspeed = 0;
             this.isJump = false;
             this.onGround = true;
+            this.directionY = " ";
         }
         else if (this.directionY == "↑") {
             this.vy = _w.y + _w.height;
             this.jumpspeed = 0;
+            this.directionY = " ";
         }
     }
 }
@@ -226,15 +281,34 @@ function Player(x, y) {
         this.jumpspeed -= gravity.g;
 
         if (this.onGround && this.isJump) {
-            this.jumpspeed = this.jumppower;
-            this.onGround = false;
+            this.jump();
         }
         this.vy -= this.jumpspeed;
+    }
+
+    this.jump = function() {
+        this.jumpspeed = this.jumppower;
+        this.onGround = false;
+    }
+
+    this.ajustX = function(_w) {
+        this.changeColorForCollitionWall(_w);
+        this.changeX(_w);
+    }
+
+    this.ajustY = function(_w) {
+        this.changeColorForCollitionWall(_w);
+        this.changeY(_w);    
+    }
+    
+    this.changeColorForCollitionWall = function(_w) {
+        _w.color = "aquamarine";
     }
 
 }
 
 function Enemy(x, y, speed) {
+    this.isAlive = true;
     this.x = x;
     this.vx = this.x;
     this.y = y;
@@ -242,6 +316,11 @@ function Enemy(x, y, speed) {
     this.movepower = speed;
     this.speed = this.movepower;
     this.color = "pink";
+
+    this.ajustX = function(_w) {
+        this.changeX(_w);
+        this.turnX();
+    }
 
     this.turnX = function() {
         if (this.directionX == "←") {
@@ -348,42 +427,47 @@ function settingNewObject() {
 function settingNewEnemys() {
     Enemy.prototype = new Charactor();
     enemys.push(new Enemy(100, canvas.height - 120, -2));
+    enemys.push(new Enemy(400, canvas.height - 120, -3));
+    enemys.push(new Enemy(800, canvas.height - 120, -2));
 }
 
 function settingNewWalls() {
     // readTextFile('./test.json')
-    // walls.push(new Wall(eval(-40), 0, 40, eval("canvas.height"), "coral"));
-    // walls.push(new Wall(eval("canvas.height - 10"), 300, 40, 300, "coral"));
-    // walls.push(new Wall(eval("canvas.height + 40"), 300, 100, 200, "coral"));
-    // walls.push(new Wall(0, canvas.height - 20, 300, 40, "coral"));
-    // walls.push(new Wall(450, canvas.height - 20, 300, 40, "coral"));
-    // walls.push(new Wall(150, canvas.height - 100, 50, 20, "orange"));
-    // walls.push(new Wall(220, canvas.height - 170, 50, 20, "orange"));
-    // walls.push(new Wall(360, canvas.height - 210, 100, 20, "orange"));
-    // walls.push(new Wall(300, canvas.height - 50, 50, 50, "coral"));
-    scroll.x_end = 7200;
-    walls.push(new Wall(-10, 0, 10, 500, "coral"));
-    walls.push(new Wall(0, canvas.height - 30, 1000, 30, "coral"));
-    walls.push(new Wall(400, canvas.height - 160, 200, 30, "coral"));
-    walls.push(new Wall(800, canvas.height - 90, 200, 30, "coral"));
-    walls.push(new Wall(1000, canvas.height - 160, 200, 130, "coral"));
-    walls.push(new Wall(1300, canvas.height - 110, 300, 130, "coral"));
-    walls.push(new Wall(1600, canvas.height - 60, 600, 30, "coral"));
-    walls.push(new Wall(1800, canvas.height - 190, 150, 30, "coral"));
-    walls.push(new Wall(2200, canvas.height - 160, 50, 130, "coral"));
-    walls.push(new Wall(2400, canvas.height - 160, 200, 130, "coral"));
-    walls.push(new Wall(2600, canvas.height - 210, 500, 180, "coral"));
-    walls.push(new Wall(3300, canvas.height - 210, 400, 50, "coral"));
-    walls.push(new Wall(3500, canvas.height - 160, 500, 50, "coral"));
-    walls.push(new Wall(4200, canvas.height - 110, 800, 80, "coral"));
-    walls.push(new Wall(4950, canvas.height - 220, 30, 10, "coral"));
-    walls.push(new Wall(4850, canvas.height - 320, 30, 30, "coral"));
-    walls.push(new Wall(4950, canvas.height - 360, 30, 30, "coral"));
-    walls.push(new Wall(5150, canvas.height - 360, 500, 100, "coral"));
-    walls.push(new Wall(5850, canvas.height - 360, 100, 300, "coral"));
-    walls.push(new Wall(6050, canvas.height - 310, 100, 250, "coral"));
-    walls.push(new Wall(scroll.x_end, canvas.height - 560, 10, 500, "coral"));
-
+    if (stage == 0) {
+        walls.push(new Wall(eval(-40), 0, 40, eval("canvas.height"), "coral"));
+        walls.push(new Wall(eval("canvas.height - 10"), 300, 40, 300, "coral"));
+        walls.push(new Wall(eval("canvas.height + 40"), 300, 100, 200, "coral"));
+        walls.push(new Wall(0, canvas.height - 20, 300, 40, "coral"));
+        walls.push(new Wall(450, canvas.height - 20, 300, 40, "coral"));
+        walls.push(new Wall(150, canvas.height - 100, 50, 20, "orange"));
+        walls.push(new Wall(220, canvas.height - 170, 50, 20, "orange"));
+        walls.push(new Wall(360, canvas.height - 210, 100, 20, "orange"));
+        walls.push(new Wall(300, canvas.height - 50, 50, 50, "coral"));
+    }
+    else if(stage == 1) {
+        scroll.x_end = 7200;
+        walls.push(new Wall(-10, 0, 10, 500, "coral"));
+        walls.push(new Wall(0, canvas.height - 30, 1000, 30, "coral"));
+        walls.push(new Wall(400, canvas.height - 160, 200, 30, "coral"));
+        walls.push(new Wall(800, canvas.height - 90, 200, 30, "coral"));
+        walls.push(new Wall(1000, canvas.height - 160, 200, 130, "coral"));
+        walls.push(new Wall(1300, canvas.height - 110, 300, 130, "coral"));
+        walls.push(new Wall(1600, canvas.height - 60, 600, 30, "coral"));
+        walls.push(new Wall(1800, canvas.height - 190, 150, 30, "coral"));
+        walls.push(new Wall(2200, canvas.height - 160, 50, 130, "coral"));
+        walls.push(new Wall(2400, canvas.height - 160, 200, 130, "coral"));
+        walls.push(new Wall(2600, canvas.height - 210, 500, 180, "coral"));
+        walls.push(new Wall(3300, canvas.height - 210, 400, 50, "coral"));
+        walls.push(new Wall(3500, canvas.height - 160, 500, 50, "coral"));
+        walls.push(new Wall(4200, canvas.height - 110, 800, 80, "coral"));
+        walls.push(new Wall(4950, canvas.height - 220, 30, 10, "coral"));
+        walls.push(new Wall(4850, canvas.height - 320, 30, 30, "coral"));
+        walls.push(new Wall(4950, canvas.height - 360, 30, 30, "coral"));
+        walls.push(new Wall(5150, canvas.height - 360, 500, 100, "coral"));
+        walls.push(new Wall(5850, canvas.height - 360, 100, 300, "coral"));
+        walls.push(new Wall(6050, canvas.height - 310, 100, 250, "coral"));
+        walls.push(new Wall(scroll.x_end, canvas.height - 560, 10, 500, "coral"));
+    }
 }
 
 // function readTextFile(file) { 
@@ -405,14 +489,14 @@ function mainLoop() {
     clock++;
 
     getKeyStatus();
+    movePlayer();
+    moveEnemys();
+    collitionEnemys();
+    scrollView();
 
     if (player.y > canvas.height + 20) {
         gameOver();
     }
-
-    movePlayer();
-    moveEnemys();
-    scrollView();
 
     draw();
 }
@@ -442,32 +526,26 @@ function movePlayer() {
     console.log("vx:" + player.vx + "[" + player.directionX + "]",
                 "vy:" + player.vy + "[" + player.directionY + "]");
 
-    player.onGround = false;
-
     walls.forEach(function (w) {
         
         w.color = w.defaultColor;
-
-        if (player.isWallCollisionX(w)) {
-            // console.log('!!!hit-X!!!');
-            // console.log('    -> w.x:', w.x, '| w.y:', w.y , '| w.width:', w.width, '| w.height:', w.height);
-            w.color = "aquamarine";
-            player.changeX(w);
-        }
-
-        if (player.isWallCollisionY(w)) {
-            // console.log('!!!hit-Y!!!');
-            // console.log('    -> w.x:', w.x, '| w.y:', w.y , '| w.width:', w.width, '| w.height:', w.height);
-            w.color = "aquamarine";
-            player.changeY(w);
-        }
+        player.ajustMovePoint(w);
 
     });
 
+    addScore(Math.abs(player.vx - player.x));
     player.move();
     console.log(' x:' + player.x, '   ' + ' y:' + player.y, '    (move)');
 
 }
+
+function addScore(_value) {
+
+    score += _value;
+
+}
+
+
 
 function moveEnemys() {
 
@@ -476,23 +554,43 @@ function moveEnemys() {
         e.preMove();
         e.getDirection();
     
-        e.onGround = false;
-    
         walls.forEach(function (w) {
             
-            if (e.isWallCollisionX(w)) {
-                e.changeX(w);
-                e.turnX();
-            }
-
-            if (e.isWallCollisionY(w)) {
-                e.changeY(w);
-            }
+            e.ajustMovePoint(w);
     
         });
     
         e.move();
+
     });
+}
+
+
+function collitionEnemys() {
+
+    enemys.forEach(function(e, e_index) {
+        
+        if (e.isCollision(player)) {
+
+            if (player.preDirectionY == "↓" && !player.preOnGround) {
+                deathEnemy(e, e_index);
+                player.jump();
+            }
+            else {
+                gameOver();
+            }
+            
+        }
+
+    })
+
+}
+
+function deathEnemy(_e, _e_index) {
+
+    addScore(_e.width * _e.height);
+    enemys.splice(_e_index, 1);
+
 }
 
 function scrollView() {
